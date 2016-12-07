@@ -1,0 +1,16 @@
+sudo: false
+
+language: node_js
+
+node_js:
+  - 4
+  - 6
+  - 7
+
+install: npm install
+
+script: npm test
+
+after_success: 
+  - npm install coveralls
+  - npm run cover && NODE_ENV=test ./node_modules/nyc/bin/nyc.js report --reporter=text-lcov | ./node_modules/coveralls/bin/coveralls.js

@@ -1,0 +1,59 @@
+{
+  "name": "drawlr",
+  "version": "1.0.0",
+  "description": "A crawler library",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test mocha --recursive",
+    "test:watch": "NODE_ENV=test mocha --recursive --watch",
+    "cover": "NODE_ENV=test nyc npm test",
+    "build": "babel src --out-dir lib",
+    "build:watch": "babel src --out-dir lib --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DremyGit/drawlr.git"
+  },
+  "keywords": [
+    "drawler"
+  ],
+  "author": "dremy",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-plugin-istanbul": "^2.0.1",
+    "babel-preset-latest": "^6.16.0",
+    "babel-preset-stage-0": "^6.16.0",
+    "babel-register": "^6.18.0",
+    "chai": "^3.5.0",
+    "eslint": "^3.11.1",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.8.0",
+    "mocha": "^3.2.0",
+    "nyc": "^10.0.0",
+    "sinon": "^1.17.6"
+  },
+  "dependencies": {
+    "bloomfilter": "0.0.16",
+    "debug": "^2.3.3",
+    "micromatch": "^2.3.11",
+    "request": "^2.79.0"
+  },
+   "bugs": {
+    "url": "https://github.com/DremyGit/drawlr/issues"
+  },
+  "homepage": "https://github.com/DremyGit/drawlr#readme",
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "reporter": [
+      "lcov",
+      "text"
+    ],
+    "sourceMap": false,
+    "instrument": false
+  }
+}
