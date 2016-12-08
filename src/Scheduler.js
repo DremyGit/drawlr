@@ -14,6 +14,8 @@ export default class Scheduler {
       entry: undefined,
       pass: '/**',
       match: [],
+      headers: undefined,
+      timeout: 5000,
       requestNum: 2,
       parserNum: 1,
       sleep: 0,
@@ -64,7 +66,10 @@ export default class Scheduler {
   initCrawlers() {
     this.crawlers = []
     for (let i = 0; i < this.options.requestNum; i++) {
-      const crawler = new Crawler(i)
+      const crawler = new Crawler(i, {
+        headers: this.options.headers,
+        timeout: this.options.timeout,
+      })
       crawler.on('html', this.crawlerOnHtml.bind(this))
       this.crawlers.push(crawler)
     }
@@ -91,15 +96,27 @@ export default class Scheduler {
     this.waitingQueue.enqueueArray([this.options.entry])
   }
 
+  _isMatchUrl(linkUrl, parttenUrl) {
+    return parttenUrl.host === linkUrl.host
+        && parttenUrl.protocol === linkUrl.protocol
+        && isMatch(linkUrl.pathname, parttenUrl.pathname)
+  }
+
+  _isMatchParttens(link, parttens) {
+    const linkUrl = URL.parse(link)
+    for (let i = 0; i < parttens.length; i++) {
+      const parttenUrl = URL.parse(parttens[i])
+      if (this._isMatchUrl(linkUrl, parttenUrl)) {
+        return true
+      }
+    }
+    return false
+  }
+
   parserOnLinks(links) {
     const matchedLinks = this.options.pass.map(partten => {
       const parttenUrl = URL.parse(partten)
-      return links.filter(link => {
-        const linkUrl = URL.parse(link)
-        return parttenUrl.host === linkUrl.host
-            && parttenUrl.protocol === linkUrl.protocol
-            && isMatch(linkUrl.pathname, parttenUrl.pathname)
-      })
+      return links.filter(link => this._isMatchUrl(URL.parse(link), parttenUrl))
     }).reduce((prev, linkGroup) => prev.concat(linkGroup), [])
     this.waitingQueue.enqueueArray(matchedLinks)
   }
@@ -107,11 +124,18 @@ export default class Scheduler {
   wqOnEnqueueArray(links) {
     this.scheduleCrawler()
     this.drawlr.emit('links', links)
+    const matchedLinks = links.filter(link => this._isMatchParttens(link, this.options.match))
+    if (matchedLinks.length !== 0) {
+      this.drawlr.emit('matchLinks', matchedLinks)
+    }
   }
 
   crawlerOnHtml(html, url, id) {
     this.requestSuccessCount += 1
     this.drawlr.emit('html', html, url)
+    if (this._isMatchParttens(url, this.options.match)) {
+      this.drawlr.emit('matchHtml', html, url)
+    }
     setTimeout(() => {
       this.scheduleCrawler(id)
       const processIndex = Math.floor(this.parsers.length * Math.random())
