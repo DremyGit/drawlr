@@ -15,12 +15,12 @@ export default class Scheduler {
       pass: '/**',
       match: [],
       requestNum: 2,
-      clusterNum: 2,
+      parserNum: 1,
       sleep: 0,
       ...options,
     }
-
     this.drawlr = drawlr
+    this.requestSuccessCount = 0
 
     this.initOptions()
     this.initWaitingQueue()
@@ -28,7 +28,7 @@ export default class Scheduler {
     this.initParsers()
     log('Scheduler inited, entry: %s, pass: %s, match: %s, requestNum: %d, clusterNum: %d',
       this.options.entry, this.options.pass, this.options.match,
-      this.options.requestNum, this.options.clusterNum)
+      this.options.requestNum, this.options.parserNum)
   }
 
   initOptions() {
@@ -73,8 +73,8 @@ export default class Scheduler {
   initParsers() {
     // Create parser clusters
     this.parsers = []
-    for (let i = 0; i < this.options.clusterNum; i++) {
-      const parser = new Parser()
+    for (let i = 0; i < this.options.parserNum; i++) {
+      const parser = new Parser(i)
       parser.on('links', this.parserOnLinks.bind(this))
       this.parsers.push(parser)
     }
@@ -83,12 +83,12 @@ export default class Scheduler {
   initWaitingQueue() {
     // Init waiting queue
     this.waitingQueue = new BloomQueue()
-    this.waitingQueue.on('enqueue', this.wqOnEnqueue.bind(this))
+    this.waitingQueue.on('enqueueArray', this.wqOnEnqueueArray.bind(this))
   }
 
   start() {
     log('Scheduler start')
-    this.waitingQueue.enqueue(this.options.entry)
+    this.waitingQueue.enqueueArray([this.options.entry])
   }
 
   parserOnLinks(links) {
@@ -101,20 +101,22 @@ export default class Scheduler {
             && isMatch(linkUrl.pathname, parttenUrl.pathname)
       })
     }).reduce((prev, linkGroup) => prev.concat(linkGroup), [])
-    this.waitingQueue.enqueue(matchedLinks)
+    this.waitingQueue.enqueueArray(matchedLinks)
   }
 
-  wqOnEnqueue(link) {
+  wqOnEnqueueArray(links) {
     this.scheduleCrawler()
-    this.drawlr.emit('link', link)
+    this.drawlr.emit('links', links)
   }
 
   crawlerOnHtml(html, url, id) {
-    this.drawlr.emit('html', html)
-    this.scheduleCrawler(id)
-    process.nextTick(() => {
-      this.parsers[0].parse2Links(html, url)
-    })
+    this.requestSuccessCount += 1
+    this.drawlr.emit('html', html, url)
+    setTimeout(() => {
+      this.scheduleCrawler(id)
+      const processIndex = Math.floor(this.parsers.length * Math.random())
+      this.parsers[processIndex].parse2Links(html, url)
+    }, this.options.sleep)
   }
 
   /**
@@ -134,6 +136,7 @@ export default class Scheduler {
     for (let i = 0; i < crawlers.length; i++) {
       const crawler = crawlers[i]
       if (this.waitingQueue.size() === 0) {
+        log('Links waitingQueue is empty, %d success', this.requestSuccessCount)
         break
       }
       if (crawler.isIdle) {

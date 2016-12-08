@@ -12,7 +12,7 @@ export default class BloomQueue extends EventEmitter {
     this.filter = new BloomFilter(32 * 256, 8)
     this.queue = []
     if (typeof array !== 'undefined') {
-      this.enqueue(array)
+      this.enqueueArray(array)
     }
     log('New BloomQueue created')
   }
@@ -21,18 +21,37 @@ export default class BloomQueue extends EventEmitter {
     return this.queue.length
   }
 
-  enqueue(items) {
-    if (Object.prototype.toString.call(items) !== '[object Array]') {
-      items = [items]
+  enqueue(item) {
+    if (this.notExisted(item)) {
+      this.filter.add(item)
+      this.queue.push(item)
+      log('%s enqueue, size is %d', item, this.size())
+      this.emit('enqueue', item)
     }
+    return this
+  }
+
+
+  enqueueArray(items) {
+    const enqueueArr = []
+    if (Object.prototype.toString.call(items) !== '[object Array]') {
+      return this
+    }
+
     items.forEach(item => {
       if (this.notExisted(item)) {
         this.filter.add(item)
-        this.queue.push(item)
-        log('%s enqueue, size is %d', item, this.size())
-        this.emit('enqueue', item)
+        enqueueArr.push(item)
       }
     })
+    if (enqueueArr.length !== 0) {
+      enqueueArr.forEach(item => {
+        this.queue.push(item)
+      })
+
+      log('%d items enqueue, size is %d', enqueueArr.length, this.size())
+      this.emit('enqueueArray', enqueueArr)
+    }
     return this
   }
 

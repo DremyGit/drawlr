@@ -1,28 +1,39 @@
-import URL from 'url'
-import debug from 'debug'
+import path from 'path'
+import childProcess from 'child_process'
 import EventEmitter from 'events'
+import debug from 'debug'
 
 const log = debug('Parser:log')
 
 export default class Parser extends EventEmitter {
 
-  parse2Links(html, currLink) {
-    const reg = /href="([^"]+?)"/g
-    const matchArr = []
-    let match
-    while ((match = reg.exec(html)) !== null) {
-      const link = URL.resolve(currLink, match[1])
-      const url = URL.parse(link, false, true)
-      url.protocol = url.protocol || URL.parse(currLink).protocol
-      url.hash = null
-      if (/https?/.test(url.protocol)) {
-        matchArr.push(URL.format(url))
-        // log('Find link: %s, from %s', URL.format(url), match[1])
-      }
-    }
-    if (matchArr.length !== 0) {
-      this.emit('links', matchArr)
-    }
-    return matchArr
+  constructor(id) {
+    super()
+    this.id = id
+    this.parser = childProcess.fork(path.join(__dirname, './ParserProcess.js'))
+    this.parser.on('message', this.onMessage.bind(this))
   }
+
+  onMessage({ type, payload }) {
+    switch (type) {
+      case 'links':
+        this.emit('links', payload.links)
+        break
+
+      default:
+        break
+    }
+  }
+
+  parse2Links(html, currLink) {
+    log('Parser %d begin parse links in %s', this.id, currLink)
+    this.parser.send({
+      type: 'links',
+      payload: {
+        html,
+        currLink,
+      },
+    })
+  }
+
 }

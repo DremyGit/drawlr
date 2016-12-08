@@ -57,6 +57,28 @@ describe('Test BloomQueue', () => {
     })
   })
 
+  describe('enqueueArray()', () => {
+    it('emit enqueueEvent after enqueue with an array', () => {
+      const spy = sinon.spy()
+      const bloomQueue = new BloomQueue(['a'])
+      bloomQueue.on('enqueueArray', spy)
+
+      bloomQueue.enqueueArray(['a', 'b', 'b', 'c'])
+
+      expect(spy.calledWith(['b', 'c'])).to.be.true
+    })
+
+    it('not emit enqueueEvent after enqueue an empty array', () => {
+      const spy = sinon.spy()
+      const bloomQueue = new BloomQueue(['a'])
+      bloomQueue.on('enqueueArray', spy)
+
+      bloomQueue.enqueueArray(['a'])
+
+      expect(spy.called).to.be.false
+    })
+  })
+
   describe('dequeue()', () => {
     it('dequeue the first item in the queue', () => {
       const bloomQueue = new BloomQueue(['a', 'b'])
