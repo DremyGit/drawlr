@@ -19,14 +19,14 @@ export default class Crawler extends EventEmitter {
     if (this.isIdle) {
       this.isIdle = false
       log('Crawler %d pick and request %s', this.id, url)
-      this.doRequest(url, html => {
+      this._doRequest(url, html => {
         this.isIdle = true
         this.emit('html', html, url, this.id)
       })
     }
   }
 
-  doRequest(url, callback) {
+  _doRequest(url, callback) {
     request(url, {
       timeout: 500,
     }, (err, res, html) => {

@@ -11,18 +11,7 @@ export default class Parser extends EventEmitter {
     super()
     this.id = id
     this.parser = childProcess.fork(path.join(__dirname, './ParserProcess.js'))
-    this.parser.on('message', this.onMessage.bind(this))
-  }
-
-  onMessage({ type, payload }) {
-    switch (type) {
-      case 'links':
-        this.emit('links', payload.links)
-        break
-
-      default:
-        break
-    }
+    this.parser.on('message', this._onMessage.bind(this))
   }
 
   parse2Links(html, currLink) {
@@ -34,6 +23,17 @@ export default class Parser extends EventEmitter {
         currLink,
       },
     })
+  }
+
+  _onMessage({ type, payload }) {
+    switch (type) {
+      case 'links':
+        this.emit('links', payload.links)
+        break
+
+      default:
+        break
+    }
   }
 
 }
