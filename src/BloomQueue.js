@@ -7,9 +7,13 @@ const error = debug('BloomQueue:error')
 
 export default class BloomQueue extends EventEmitter {
 
-  constructor(array) {
+  constructor(array, n = 2000, p = 0.001) {
     super()
-    this.filter = new BloomFilter(32 * 256, 8)
+
+    const bitNum = -n * Math.log(p) / (Math.LN2 * Math.LN2)
+    const hashNum = bitNum / n * Math.LN2
+    this.filter = new BloomFilter(Math.ceil(bitNum), Math.ceil(hashNum))
+
     this.queue = []
     if (typeof array !== 'undefined') {
       this.enqueueArray(array)
@@ -22,7 +26,7 @@ export default class BloomQueue extends EventEmitter {
   }
 
   enqueue(item) {
-    if (this.notExisted(item)) {
+    if (this._notExisted(item)) {
       this.filter.add(item)
       this.queue.push(item)
       log('%s enqueue, size is %d', item, this.size())
@@ -39,7 +43,7 @@ export default class BloomQueue extends EventEmitter {
     }
 
     items.forEach(item => {
-      if (this.notExisted(item)) {
+      if (this._notExisted(item)) {
         this.filter.add(item)
         enqueueArr.push(item)
       }
@@ -70,7 +74,22 @@ export default class BloomQueue extends EventEmitter {
     return this.size() === 0
   }
 
-  notExisted(item) {
+
+  export() {
+    return {
+      queue: this.queue,
+      buckets: [].slice.call(this.filter.buckets),
+      k: this.filter.k,
+    }
+  }
+
+  static from(data) {
+    const bloomQueue = new BloomQueue(data.queue)
+    bloomQueue.filter = new BloomFilter(data.buckets, data.k)
+    return bloomQueue
+  }
+
+  _notExisted(item) {
     return !this.filter.test(item)
   }
 }

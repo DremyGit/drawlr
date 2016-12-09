@@ -23,7 +23,6 @@ export default class Scheduler {
       ...options,
     }
     this.drawlr = drawlr
-    this.requestSuccessCount = 0
 
     this.initOptions()
     this.initWaitingQueue()
@@ -55,7 +54,7 @@ export default class Scheduler {
 
     const target = this.options.target
     Object.keys(target).forEach(group => {
-      if (Object.prototype.toString(target[group]) !== '[object Array]') {
+      if (Object.prototype.toString.call(target[group]) !== '[object Array]') {
         target[group] = [target[group]]
       }
       target[group] = target[group].map(partten => urlFormat(partten, relativeUrl))
@@ -66,7 +65,8 @@ export default class Scheduler {
     }
     this.options.pass = this.options.pass.map(url => urlFormat(url, relativeUrl))
               .concat(Object.keys(target).map(group => target[group])
-                                         .reduce((prev, parttens) => prev.concat(parttens), []))
+                .reduce((prev, parttens) => prev.concat(parttens), []))
+              .filter((url, index, arr) => index === arr.indexOf(url))
   }
 
   initCrawlers() {
@@ -105,7 +105,11 @@ export default class Scheduler {
   start() {
     process.nextTick(() => {
       log('Scheduler start')
-      this.waitingQueue.enqueueArray([this.options.entry])
+      if (this.waitingQueue.size() === 0) {
+        this.waitingQueue.enqueueArray([this.options.entry])
+      } else {
+        this.scheduleCrawler()
+      }
     })
   }
 
@@ -152,7 +156,6 @@ export default class Scheduler {
   }
 
   crawlerOnHtml(html, url, id) {
-    this.requestSuccessCount += 1
     this.drawlr.emit('html', html, url)
 
     const target = this.options.target
@@ -164,7 +167,7 @@ export default class Scheduler {
         // Parse html by customer parsing functions
         const parserFuncs = this.options.parser
         Object.keys(parserFuncs).forEach(funcName => {
-          if (funcName === group) {
+          if (funcName === group && typeof parserFuncs[funcName] === 'function') {
             const processIndex = Math.floor(this.parsers.length * Math.random())
             this.parsers[processIndex].eval(parserFuncs[funcName], html, url, group)
           }
@@ -198,12 +201,44 @@ export default class Scheduler {
     for (let i = 0; i < crawlers.length; i++) {
       const crawler = crawlers[i]
       if (this.waitingQueue.size() === 0) {
-        log('Links waitingQueue is empty, %d success', this.requestSuccessCount)
+        log('Links waitingQueue is empty now')
         break
       }
       if (crawler.isIdle) {
         crawler.pick(this.waitingQueue.dequeue())
       }
     }
+  }
+
+  export() {
+    const parserFuncs = this.options.parser
+    const exportFuncs = {}
+    Object.keys(parserFuncs).forEach(funcName => {
+      exportFuncs[funcName] = parserFuncs[funcName].toString()
+    })
+    return {
+      options: {
+        ...this.options,
+        parser: exportFuncs,
+      },
+      waitingQueue: this.waitingQueue.export(),
+    }
+  }
+
+  static from(data, drawlr) {
+    const exportFuncs = data.options.parser
+    const parserFuncs = {}
+    Object.keys(exportFuncs).forEach(funcName => {
+      if (!/^function/.test(exportFuncs[funcName])) {
+        parserFuncs[funcName] = eval('(function ' + exportFuncs[funcName] + ')')
+      } else {
+        parserFuncs[funcName] = eval('(' + exportFuncs[funcName] + ')')
+      }
+    })
+    data.options.parser = parserFuncs
+    const scheduler = new Scheduler(data.options)
+    scheduler.waitingQueue = BloomQueue.from(data.waitingQueue)
+    scheduler.drawlr = drawlr
+    return scheduler
   }
 }

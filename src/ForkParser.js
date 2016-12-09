@@ -3,7 +3,7 @@ import childProcess from 'child_process'
 import EventEmitter from 'events'
 import debug from 'debug'
 
-const log = debug('ForkParser:log')
+const log = debug('Parser:log')
 
 export default class ForkParser extends EventEmitter {
 

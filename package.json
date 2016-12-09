@@ -26,6 +26,7 @@
     "babel-preset-stage-0": "^6.16.0",
     "babel-register": "^6.18.0",
     "chai": "^3.5.0",
+    "chai-things": "^0.2.0",
     "eslint": "^3.11.1",
     "eslint-config-airbnb": "^13.0.0",
     "eslint-plugin-import": "^2.2.0",
@@ -41,7 +42,7 @@
     "micromatch": "^2.3.11",
     "request": "^2.79.0"
   },
-   "bugs": {
+  "bugs": {
     "url": "https://github.com/DremyGit/drawlr/issues"
   },
   "homepage": "https://github.com/DremyGit/drawlr#readme",
