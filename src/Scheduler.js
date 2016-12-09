@@ -13,7 +13,7 @@ export default class Scheduler {
     this.options = {
       entry: undefined,
       pass: '/**',
-      match: [],
+      target: {},
       headers: undefined,
       timeout: 5000,
       requestNum: 2,
@@ -51,16 +51,21 @@ export default class Scheduler {
 
     const relativeUrl = URL.parse(this.options.entry)
 
-    if (Object.prototype.toString.call(this.options.match) !== '[object Array]') {
-      this.options.match = [this.options.match]
-    }
-    this.options.match = this.options.match.map(url => urlFormat(url, relativeUrl))
+
+    const target = this.options.target
+    Object.keys(target).forEach(group => {
+      if (Object.prototype.toString(target[group]) !== '[object Array]') {
+        target[group] = [target[group]]
+      }
+      target[group] = target[group].map(partten => urlFormat(partten, relativeUrl))
+    })
 
     if (Object.prototype.toString.call(this.options.pass) !== '[object Array]') {
       this.options.pass = [this.options.pass]
     }
     this.options.pass = this.options.pass.map(url => urlFormat(url, relativeUrl))
-                                          .concat(this.options.match)
+              .concat(Object.keys(target).map(group => target[group])
+                                         .reduce((prev, parttens) => prev.concat(parttens), []))
   }
 
   initCrawlers() {
@@ -92,8 +97,10 @@ export default class Scheduler {
   }
 
   start() {
-    log('Scheduler start')
-    this.waitingQueue.enqueueArray([this.options.entry])
+    process.nextTick(() => {
+      log('Scheduler start')
+      this.waitingQueue.enqueueArray([this.options.entry])
+    })
   }
 
   _isMatchUrl(linkUrl, parttenUrl) {
@@ -124,18 +131,28 @@ export default class Scheduler {
   wqOnEnqueueArray(links) {
     this.scheduleCrawler()
     this.drawlr.emit('links', links)
-    const matchedLinks = links.filter(link => this._isMatchParttens(link, this.options.match))
-    if (matchedLinks.length !== 0) {
-      this.drawlr.emit('matchLinks', matchedLinks)
-    }
+
+    const target = this.options.target
+    Object.keys(target).forEach(group => {
+      const targetLinks = links.filter(link => this._isMatchParttens(link, target[group]))
+      if (targetLinks.length !== 0) {
+        this.drawlr.emit('targetLinks', targetLinks, group)
+      }
+    })
   }
 
   crawlerOnHtml(html, url, id) {
     this.requestSuccessCount += 1
     this.drawlr.emit('html', html, url)
-    if (this._isMatchParttens(url, this.options.match)) {
-      this.drawlr.emit('matchHtml', html, url)
-    }
+
+    const target = this.options.target
+    Object.keys(target).forEach(group => {
+      const parttens = this.options.target[group]
+      if (this._isMatchParttens(url, parttens)) {
+        this.drawlr.emit('targetHtml', html, url, group)
+      }
+    })
+
     setTimeout(() => {
       this.scheduleCrawler(id)
       const processIndex = Math.floor(this.parsers.length * Math.random())
