@@ -2,7 +2,7 @@ import URL from 'url'
 import debug from 'debug'
 import { isMatch } from 'micromatch'
 import Crawler from './Crawler'
-import Parser from './Parser'
+import { LocalParser, ForkParser } from './Parser'
 import BloomQueue from './BloomQueue'
 
 const log = debug('Scheduler:log')
@@ -18,7 +18,7 @@ export default class Scheduler {
       headers: undefined,
       timeout: 5000,
       requestNum: 2,
-      parserNum: 1,
+      parserProcessNum: 0,
       sleep: 0,
       ...options,
     }
@@ -29,9 +29,9 @@ export default class Scheduler {
     this.initWaitingQueue()
     this.initCrawlers()
     this.initParsers()
-    log('Scheduler inited, entry: %s, pass: %s, match: %s, requestNum: %d, clusterNum: %d',
-      this.options.entry, this.options.pass, this.options.match,
-      this.options.requestNum, this.options.parserNum)
+    log('Scheduler inited, entry: %s, pass: %s, target: %s, requestNum: %d, parserProcessNum: %d',
+      this.options.entry, this.options.pass, this.options.target,
+      this.options.requestNum, this.options.parserProcessNum)
   }
 
   initOptions() {
@@ -82,18 +82,22 @@ export default class Scheduler {
   }
 
   initParsers() {
-    // Create parser clusters
     this.parsers = []
-    for (let i = 0; i < this.options.parserNum; i++) {
-      const parser = new Parser(i)
+    if (this.options.parserProcessNum !== 0) {
+      for (let i = 0; i < this.options.parserProcessNum; i++) {
+        this.parsers.push(new ForkParser(i))
+      }
+    } else {
+      this.parsers.push(new LocalParser(0))
+    }
+
+    this.parsers.forEach(parser => {
       parser.on('links', this.parserOnLinks.bind(this))
       parser.on('eval', this.parserOnEval.bind(this))
-      this.parsers.push(parser)
-    }
+    })
   }
 
   initWaitingQueue() {
-    // Init waiting queue
     this.waitingQueue = new BloomQueue()
     this.waitingQueue.on('enqueueArray', this.wqOnEnqueueArray.bind(this))
   }
