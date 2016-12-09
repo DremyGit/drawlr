@@ -11,6 +11,23 @@ process.on('message', ({ type, payload }) => {
       })
       break
 
+    case 'eval':
+      process.send({
+        type: 'eval',
+        payload: {
+          result: eval(`(${payload.func})`)
+                    .apply(null, [
+                      payload.html,
+                      payload.link,
+                      payload.group,
+                    ]),
+          html: payload.html,
+          link: payload.link,
+          group: payload.group,
+        },
+      })
+      break
+
     default:
       break
   }

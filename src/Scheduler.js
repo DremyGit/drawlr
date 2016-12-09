@@ -14,6 +14,7 @@ export default class Scheduler {
       entry: undefined,
       pass: '/**',
       target: {},
+      parser: {},
       headers: undefined,
       timeout: 5000,
       requestNum: 2,
@@ -86,6 +87,7 @@ export default class Scheduler {
     for (let i = 0; i < this.options.parserNum; i++) {
       const parser = new Parser(i)
       parser.on('links', this.parserOnLinks.bind(this))
+      parser.on('eval', this.parserOnEval.bind(this))
       this.parsers.push(parser)
     }
   }
@@ -128,6 +130,10 @@ export default class Scheduler {
     this.waitingQueue.enqueueArray(matchedLinks)
   }
 
+  parserOnEval(result, html, link, group) {
+    this.drawlr.emit('targetParse', result, html, link, group)
+  }
+
   wqOnEnqueueArray(links) {
     this.scheduleCrawler()
     this.drawlr.emit('links', links)
@@ -150,13 +156,24 @@ export default class Scheduler {
       const parttens = this.options.target[group]
       if (this._isMatchParttens(url, parttens)) {
         this.drawlr.emit('targetHtml', html, url, group)
+
+        // Parse html by customer parsing functions
+        const parserFuncs = this.options.parser
+        Object.keys(parserFuncs).forEach(funcName => {
+          if (funcName === group) {
+            const processIndex = Math.floor(this.parsers.length * Math.random())
+            this.parsers[processIndex].eval(parserFuncs[funcName], html, url, group)
+          }
+        })
       }
     })
 
+    // Parse links
+    const processIndex = Math.floor(this.parsers.length * Math.random())
+    this.parsers[processIndex].parse2Links(html, url)
+
     setTimeout(() => {
       this.scheduleCrawler(id)
-      const processIndex = Math.floor(this.parsers.length * Math.random())
-      this.parsers[processIndex].parse2Links(html, url)
     }, this.options.sleep)
   }
 

@@ -25,10 +25,31 @@ export default class Parser extends EventEmitter {
     })
   }
 
+  eval(func, html, link, group) {
+    log('Parser %d begin eval func in %s - %s', this.id, link, group)
+    let funcStr = func.toString()
+    if (!/^function/.test(funcStr)) {
+      funcStr = 'function ' + funcStr
+    }
+    this.parser.send({
+      type: 'eval',
+      payload: {
+        func: funcStr,
+        html,
+        link,
+        group,
+      },
+    })
+  }
+
   _onMessage({ type, payload }) {
     switch (type) {
       case 'links':
         this.emit('links', payload.links)
+        break
+
+      case 'eval':
+        this.emit('eval', payload.result, payload.html, payload.link, payload.group)
         break
 
       default:
