@@ -21,6 +21,7 @@ export default class Scheduler {
       requestNum: 3,
       parserProcessNum: 0,
       sleep: 0,
+      filter: {},
       ...options,
     }
     this.drawlr = drawlr
@@ -107,7 +108,7 @@ export default class Scheduler {
   }
 
   initWaitingQueue() {
-    this.waitingQueue = new BloomQueue()
+    this.waitingQueue = new BloomQueue([], this.options.filter.n, this.options.filter.p)
     this.waitingQueue.on('enqueueArray', this.wqOnEnqueueArray.bind(this))
   }
 
