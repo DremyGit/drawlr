@@ -1,7 +1,7 @@
 {
   "name": "drawlr",
-  "version": "1.0.0",
-  "description": "A crawler library",
+  "version": "0.2.0",
+  "description": "A high-performance automatic crawler library",
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test mocha test/*.test.js",
@@ -15,7 +15,9 @@
     "url": "git+https://github.com/DremyGit/drawlr.git"
   },
   "keywords": [
-    "drawler"
+    "drawlr",
+    "crawler",
+    "spider"
   ],
   "author": "dremy",
   "license": "MIT",

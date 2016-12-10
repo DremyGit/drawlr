@@ -1,4 +1,9 @@
-!lib
+.vscode
+.nyc_output
+*.log
+coverage
+node_modules
+data.json
 src
 examples
 test
