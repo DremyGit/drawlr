@@ -15,7 +15,7 @@ export default class Scheduler {
       pass: '/**',
       target: {},
       parser: {},
-      headers: undefined,
+      headers: {},
       timeout: 5000,
       requestNum: 2,
       parserProcessNum: 0,
@@ -72,11 +72,12 @@ export default class Scheduler {
   initCrawlers() {
     this.crawlers = []
     for (let i = 0; i < this.options.requestNum; i++) {
-      const crawler = new Crawler(i, {
+      const crawler = new Crawler({
         headers: this.options.headers,
         timeout: this.options.timeout,
-      })
-      crawler.on('html', this.crawlerOnHtml.bind(this))
+      }, i)
+      crawler.on('success', this.onCrawlerSuccess.bind(this))
+      crawler.on('error', this.onCrawlerError.bind(this))
       this.crawlers.push(crawler)
     }
   }
@@ -155,7 +156,7 @@ export default class Scheduler {
     })
   }
 
-  crawlerOnHtml(html, url, id) {
+  onCrawlerSuccess(html, url, id) {
     this.drawlr.emit('html', html, url)
 
     const target = this.options.target
@@ -174,11 +175,16 @@ export default class Scheduler {
         })
       }
     })
-
     // Parse links
     const processIndex = Math.floor(this.parsers.length * Math.random())
     this.parsers[processIndex].parse2Links(html, url)
 
+    setTimeout(() => {
+      this.scheduleCrawler(id)
+    }, this.options.sleep)
+  }
+
+  onCrawlerError(err, url, id) {
     setTimeout(() => {
       this.scheduleCrawler(id)
     }, this.options.sleep)

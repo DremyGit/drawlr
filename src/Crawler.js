@@ -1,6 +1,7 @@
 import EventEmitter from 'events'
 import request from 'request'
 import debug from 'debug'
+import { isArray, randomInArray } from './Utils'
 
 const log = debug('Crawler:log')
 const success = debug('Crawler:success')
@@ -8,11 +9,11 @@ const error = debug('Crawler:error')
 
 export default class Crawler extends EventEmitter {
 
-  constructor(id, options) {
+  constructor(options, id) {
     super()
     this.id = id
     this.options = {
-      headers: undefined,
+      headers: {},
       timeout: 5000,
       ...options,
     }
@@ -26,14 +27,21 @@ export default class Crawler extends EventEmitter {
       log('Crawler %d pick and request %s', this.id, url)
       this._doRequest(url, (err, html) => {
         this.isIdle = true
-        this.emit('html', html, url, this.id)
+        if (err) {
+          this.emit('error', err, url, this.id)
+        } else {
+          this.emit('success', html, url, this.id)
+        }
       })
+    } else {
+      error('Crawler %d is busy', this.id)
+      this.emit('error', new Error('Crawler ' + this.id + ' is busy'), url, this.id)
     }
   }
 
   _doRequest(url, callback) {
-    request(url, {
-      headers: this.options.headers,
+    request.get(url, {
+      headers: this._getHeaders(),
       timeout: this.options.timeout,
     }, (err, res, html) => {
       if (!err && res.statusCode === 200) {
@@ -43,8 +51,23 @@ export default class Crawler extends EventEmitter {
         }
       } else {
         error('Crawler %d request url %s Error: %s', this.id, url, err && err.message || res.statusCode)
-        callback(err, '', res)
+        if (callback) {
+          callback(err, '', res)
+        }
       }
     })
+  }
+
+  _getHeaders() {
+    const headers = this.options.headers
+    const requestHeaders = {}
+    Object.keys(headers).forEach(field => {
+      if (isArray(headers[field])) {
+        requestHeaders[field] = randomInArray(headers[field])
+      } else {
+        requestHeaders[field] = headers[field]
+      }
+    })
+    return requestHeaders
   }
 }

@@ -1,7 +1,4 @@
 import URL from 'url'
-import debug from 'debug'
-
-const log = debug('Utils:log')
 
 export function parse2Links(html, currLink) {
   const reg = /href="([^"]+?)"/g
@@ -18,4 +15,17 @@ export function parse2Links(html, currLink) {
     }
   }
   return matchArr
+}
+
+export function isArray(item) {
+  return Object.prototype.toString.call(item) === '[object Array]'
+}
+
+export function randomInArray(array) {
+  if (array.length === 1) {
+    return array[0]
+  }
+
+  const index = Math.floor(array.length * Math.random())
+  return array[index]
 }
