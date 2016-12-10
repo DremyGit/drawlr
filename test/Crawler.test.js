@@ -62,18 +62,33 @@ describe('Test Crawler.js', () => {
 
       expect(spy.calledWith('html', 'http://example.com')).to.be.true
     })
+
     it('emit error event if request is error', () => {
       const spy = sinon.spy()
       const stubRequest = sinon.stub(request, 'get')
-                            .callsArgWith(2, 'Error', {statusCode: 404})
+                            .callsArgWith(2, new Error('Error'))
       const crawler = new Crawler()
       crawler.on('error', spy)
 
       crawler.pick('http://example.com')
       stubRequest.restore()
 
-      expect(spy.calledWith('Error', 'http://example.com')).to.be.true
+      expect(spy.called).to.be.true
     })
+
+    it('emit error event if response status code is not 200', () => {
+      const spy = sinon.spy()
+      const stubRequest = sinon.stub(request, 'get')
+                            .callsArgWith(2, null, {statusCode: 404})
+      const crawler = new Crawler()
+      crawler.on('error', spy)
+
+      crawler.pick('http://example.com')
+      stubRequest.restore()
+
+      expect(spy.called).to.be.true
+    })
+
     it('emit error event if crawler is busy', () => {
       const spySuccess = sinon.spy()
       const spyError = sinon.spy()

@@ -81,6 +81,16 @@ describe('Test BloomQueue', () => {
 
       expect(spy.called).to.be.false
     })
+
+    it('not emit enqueueEvent after enqueue not array item', () => {
+      const spy = sinon.spy()
+      const bloomQueue = new BloomQueue()
+      bloomQueue.on('enqueueArray', spy)
+      
+      bloomQueue.enqueueArray('a')
+
+      expect(spy.called).to.be.false
+    })
   })
 
   describe('dequeue()', () => {

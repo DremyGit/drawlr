@@ -1,7 +1,7 @@
 import URL from 'url'
 
 export function parse2Links(html, currLink) {
-  const reg = /href="([^"]+?)"/g
+  const reg = /(?:href="([^"]+?)")/g
   const matchArr = []
   let match
   while ((match = reg.exec(html)) !== null) {
@@ -22,6 +22,10 @@ export function isArray(item) {
 }
 
 export function randomInArray(array) {
+  if (!isArray(array) || array.length === 0) {
+    return null
+  }
+
   if (array.length === 1) {
     return array[0]
   }
