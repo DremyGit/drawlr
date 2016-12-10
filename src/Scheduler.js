@@ -214,6 +214,31 @@ export default class Scheduler {
         crawler.pick(this.waitingQueue.dequeue())
       }
     }
+
+    if (this._maybeFinish()) {
+      this.finishTimer = setTimeout(() => {
+        if (this.options.parserProcessNum !== 0) {
+          this.parsers.forEach(parser => {
+            parser.exit()
+          })
+        }
+        this.drawlr.emit('finish')
+      }, 500)
+    } else {
+      clearTimeout(this.finishTimer)
+    }
+  }
+
+  _maybeFinish() {
+    if (this.waitingQueue.size() !== 0) {
+      return false
+    }
+    for (let i = 0; i < this.crawlers.length; i++) {
+      if (!this.crawlers[i].isIdle) {
+        return false
+      }
+    }
+    return true
   }
 
   export() {

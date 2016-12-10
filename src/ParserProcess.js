@@ -28,6 +28,10 @@ process.on('message', ({ type, payload }) => {
       })
       break
 
+    case 'exit':
+      process.exit(0)
+      break
+
     default:
       break
   }

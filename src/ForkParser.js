@@ -42,6 +42,13 @@ export default class ForkParser extends EventEmitter {
     })
   }
 
+  exit() {
+    log('Parser %d will exit', this.id)
+    this.parser.send({
+      type: 'exit',
+    })
+  }
+
   _onMessage({ type, payload }) {
     switch (type) {
       case 'links':
