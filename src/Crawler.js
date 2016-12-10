@@ -52,7 +52,11 @@ export default class Crawler extends EventEmitter {
       } else {
         error('Crawler %d request url %s Error: %s', this.id, url, err && err.message || res.statusCode)
         if (callback) {
-          callback(err, '', res)
+          if (err) {
+            callback(err, '', res)
+          } else {
+            callback(new Error('Unexpected status code ' + res.statusCode), '', res)
+          }
         }
       }
     })

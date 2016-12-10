@@ -12,12 +12,13 @@ export default class Scheduler {
   constructor(options, drawlr) {
     this.options = {
       entry: undefined,
-      pass: '/**',
+      pass: ['/**'],
+      exclude: [],
       target: {},
       parser: {},
       headers: {},
       timeout: 5000,
-      requestNum: 2,
+      requestNum: 3,
       parserProcessNum: 0,
       sleep: 0,
       ...options,
@@ -28,8 +29,9 @@ export default class Scheduler {
     this.initWaitingQueue()
     this.initCrawlers()
     this.initParsers()
-    log('Scheduler inited, entry: %s, pass: %s, target: %s, requestNum: %d, parserProcessNum: %d',
-      this.options.entry, this.options.pass, this.options.target,
+    log('Scheduler inited, entry: %s, pass: %s, exclude: %s, target: %s, requestNum: %d, parserProcessNum: %d',
+      this.options.entry, this.options.pass, this.options.exclude,
+      Object.keys(this.options.target).map(group => this.options.target[group]),
       this.options.requestNum, this.options.parserProcessNum)
   }
 
@@ -63,10 +65,16 @@ export default class Scheduler {
     if (Object.prototype.toString.call(this.options.pass) !== '[object Array]') {
       this.options.pass = [this.options.pass]
     }
-    this.options.pass = this.options.pass.map(url => urlFormat(url, relativeUrl))
+    const pass = this.options.pass
+    this.options.pass = pass.map(url => urlFormat(url, relativeUrl))
               .concat(Object.keys(target).map(group => target[group])
                 .reduce((prev, parttens) => prev.concat(parttens), []))
               .filter((url, index, arr) => index === arr.indexOf(url))
+
+    if (Object.prototype.toString.call(this.options.exclude) !== '[object Array]') {
+      this.options.exclude = [this.options.exclude]
+    }
+    this.options.exclude = this.options.exclude.map(url => urlFormat(url, relativeUrl))
   }
 
   initCrawlers() {
@@ -120,6 +128,17 @@ export default class Scheduler {
         && isMatch(linkUrl.pathname, parttenUrl.pathname)
   }
 
+  _isExcludeUrl(linkUrl) {
+    for (let i = 0; i < this.options.exclude.length; i++) {
+      const excludePartten = URL.parse(this.options.exclude[i])
+      excludePartten.pathname = decodeURI(excludePartten.pathname)
+      if (this._isMatchUrl(linkUrl, excludePartten)) {
+        return true
+      }
+    }
+    return false
+  }
+
   _isMatchParttens(link, parttens) {
     const linkUrl = URL.parse(link)
     for (let i = 0; i < parttens.length; i++) {
@@ -134,7 +153,11 @@ export default class Scheduler {
   parserOnLinks(links) {
     const matchedLinks = this.options.pass.map(partten => {
       const parttenUrl = URL.parse(partten)
-      return links.filter(link => this._isMatchUrl(URL.parse(link), parttenUrl))
+      return links.filter(link => {
+        const linkUrl = URL.parse(link)
+        return this._isMatchUrl(linkUrl, parttenUrl)
+            && !this._isExcludeUrl(linkUrl)
+      })
     }).reduce((prev, linkGroup) => prev.concat(linkGroup), [])
     this.waitingQueue.enqueueArray(matchedLinks)
   }
@@ -187,6 +210,7 @@ export default class Scheduler {
   onCrawlerError(err, url, id) {
     setTimeout(() => {
       this.scheduleCrawler(id)
+      this.onCrawlerError(err, url)
     }, this.options.sleep)
   }
 
