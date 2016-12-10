@@ -28,16 +28,16 @@
 ### 安装
 
 ```
-$ npm install --save crawlr
+$ npm install --save drawlr
 ```
 
 ### 使用说明
 
 ```js
-const Crawlr = require('crawlr');
+const Drawlr = require('drawlr');
 
 // 配置爬虫
-const crawlr = new Crawlr({
+const Drawlr = new Drawlr({
   entry: 'https://github.com/trending?since=daily',   // 爬虫爬取入口 URL
   pass: ['/**'],            // 爬虫允许途经 URL，使用 Glob 匹配语法
   exclude: [                // 爬虫无需爬取的资源
@@ -56,17 +56,17 @@ const crawlr = new Crawlr({
 });
 
 // 监听页面自定义解析操作完成事件
-crawlr.on('targetParse', (result, html, link, group) => {
+drawlr.on('targetParse', (result, html, link, group) => {
   console.log('Title: %s from %s - %s', result, group, link);
 });
 
 // 监听爬取错误事件
-crawlr.on('error', (err, url) => {
+drawlr.on('error', (err, url) => {
   console.log('Request %s Error: %s', url, err);
 });
 
 // 爬取开始
-crawlr.start();
+drawlr.start();
 ```
 
 ### 状态保存与恢复
