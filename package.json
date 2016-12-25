@@ -2,6 +2,9 @@
   "name": "drawlr",
   "version": "0.2.0",
   "description": "A high-performance automatic crawler library",
+  "bin": {
+    "drawlr": "./bin/drawlr.js"
+  },
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test mocha test/*.test.js",
@@ -40,6 +43,7 @@
   },
   "dependencies": {
     "bloomfilter": "0.0.16",
+    "commander": "^2.9.0",
     "debug": "^2.3.3",
     "micromatch": "^2.3.11",
     "request": "^2.79.0"
