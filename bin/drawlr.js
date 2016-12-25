@@ -4,7 +4,7 @@ var program = require('commander');
 var Drawlr = require('../');
 
 program
-  .version('0.3.0')
+  .version('0.3.1')
   .usage('<entryURL> [options...]')
   .arguments('<entryURL>')
   .option('-p, --pass [url pattern]', 'pass url pattern', collect,[])
@@ -47,7 +47,7 @@ function main(entryUrl, options) {
         }
       }
     },
-    headers: program.header,
+    headers: getHeaders(program.header),
     sleep: program.sleep,
     requestNum: program.client,
     parserProcessNum: 0
@@ -82,6 +82,22 @@ function collect(val, memo) {
 
 function list(val) {
   return val.split(/[\s,]+/);
+}
+
+function getHeaders(headerArr) {
+  var headers = {};
+  console.log(headerArr)
+  headerArr.forEach(function (header) {
+    var arr = header.split(':');
+    var field = arr[0].trim();
+    var value = arr.slice(1).join(':').trim();
+    if (!headers[field]) {
+      headers[field] = [value];
+    } else {
+      headers[field].push(value);
+    }
+  })
+  return headers;
 }
 
 
