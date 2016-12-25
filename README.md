@@ -88,6 +88,37 @@ fs.readFile('./data.json', 'utf-8', (err, data) => {
 });
 ```
 
+### CLI
+
+使用 `npm install -g drawlr` 安装之后，可以使用命令行操作。
+
+```bash
+$ drawlr --help
+
+  Usage: drawlr <entryURL> [options...]
+
+  Options:
+
+    -h, --help                   output usage information
+    -V, --version                output the version number
+    -p, --pass [url pattern]     pass url pattern
+    -t, --target [url pattern]   target url pattern
+    -e, --exclude [url pattern]  exclude urls
+    -r, --regex [regex]          regex express string
+    -g, --global                 regex g mode
+    -h, --header [header]        request header
+    -c, --client [n]             number of request client
+    -s, --sleep [s]              millisecond of sleeping after an request finished
+    -j, --json                   output json format
+```
+
+样例：
+
+```
+$ drawlr 'https://movie.douban.com/top250?start=0&amp;filter='\
+    -p '/top250' -t '/top250' -r 'class="title">([^<&]*?)</span>' -g
+```
+
 ## Option API
 
 ### option.entry
